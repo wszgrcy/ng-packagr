@@ -42,11 +42,11 @@ export const compileNgcTransform: Transform = transformFromPromise(async graph =
     target: ts.ScriptTarget.ES5,
     downlevelIteration: true,
     // the options are here, to improve the build time
-    declaration: false,
-    declarationDir: undefined,
-    skipMetadataEmit: true,
-    skipTemplateCodegen: true,
-    strictMetadataEmit: false,
+    declaration: true,
+    // declarationDir: undefined,
+    // skipMetadataEmit: true,
+    // skipTemplateCodegen: true,
+    // strictMetadataEmit: false,
   });
 
   return graph;

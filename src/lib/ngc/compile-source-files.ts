@@ -86,7 +86,28 @@ export async function compileSourceFiles(
       // For Ivy we don't need a custom emitCallback to have tsickle transforms
       emitCallback: tsConfigOptions.enableIvy ? undefined : createEmitCallback(tsConfigOptions),
       customTransformers: {
-        beforeTs: [downlevelConstructorParameters(() => ngProgram.getTsProgram().getTypeChecker())],
+        beforeTs: [
+          downlevelConstructorParameters(() => ngProgram.getTsProgram().getTypeChecker()),
+          ctx => {
+            return sf => {
+              let fn = node => {
+                if (node.kind === 10) {
+                  if (node.text.includes('component') || node.text.includes('module')) {
+                    return ts.createStringLiteral(node.text + '.ngfactory');
+                  }
+                }
+                return ts.visitEachChild(node, fn, ctx);
+              };
+
+              if (sf.fileName.includes('public-api.ts')) {
+                return ts.visitNode(sf, node => {
+                  return ts.visitEachChild(node, fn, ctx);
+                });
+              }
+              return sf;
+            };
+          },
+        ],
       },
     });
 
