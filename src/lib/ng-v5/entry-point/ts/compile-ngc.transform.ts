@@ -40,7 +40,7 @@ export const compileNgcTransform: Transform = transformFromPromise(async graph =
   await compileSourceFiles(graph, tsConfig, moduleResolutionCache, stylesheetProcessor, {
     outDir: path.dirname(esm5),
     target: ts.ScriptTarget.ES5,
-    downlevelIteration: true,
+    // downlevelIteration: true,
     // the options are here, to improve the build time
     declaration: true,
     // declarationDir: undefined,
