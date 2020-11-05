@@ -99,7 +99,7 @@ async function resolveUserPackage(folderPathOrFilePath: string, isSecondary = fa
 
 /**
  * Scans `directoryPath` and sub-folders, looking for `package.json` files.
- * Similar to `find ${directoryPath} --name package.json --exec dirname {}`.
+ * Similar to `find ${directoryPath} --name package.json --exec dirname {}`. 查询子文件夹找到二级包
  *
  * @param directoryPath Path pointing to a directory
  * @param excludeFolder A sub-folder of `directoryPath` that is excluded from search results.
@@ -123,7 +123,7 @@ async function findSecondaryPackagesPaths(directoryPath: string, excludeFolder: 
 
 /**
  * Reads a secondary entry point from it's package file.
- *
+ * 创建多级路径入口点
  * @param primaryDirectoryPath A path pointing to the directory of the primary entry point.
  * @param primary The primary entry point.
  */

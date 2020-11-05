@@ -5,7 +5,7 @@ import { COMPILE_NGC_TOKEN, COMPILE_NGC_TRANSFORM } from './entry-point/ts/compi
 import { WRITE_BUNDLES_TRANSFORM, WRITE_BUNDLES_TRANSFORM_TOKEN } from './entry-point/write-bundles.di';
 import { WRITE_PACKAGE_TRANSFORM, WRITE_PACKAGE_TRANSFORM_TOKEN } from './entry-point/write-package.di';
 import { entryPointTransformFactory } from './entry-point.transform';
-
+/** 构建时使用 */
 export const ENTRY_POINT_TRANSFORM_TOKEN = new InjectionToken<Transform>(`ng.v5.entryPointTransform`);
 
 export const ENTRY_POINT_TRANSFORM: TransformProvider = provideTransform({

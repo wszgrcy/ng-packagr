@@ -23,7 +23,7 @@ export const analyseSourcesTransform: Transform = pipe(
 
 /**
  * Analyses an entrypoint, searching for TypeScript dependencies and additional resources (Templates and Stylesheets).
- *
+ * 分析每一个入口点
  * @param graph Build graph
  * @param entryPoint Current entry point that should be analysed.
  * @param entryPoints List of all entry points.
@@ -82,6 +82,7 @@ function analyseEntryPoint(graph: BuildGraph, entryPoint: EntryPointNode, entryP
 
   // this is a workaround due to the below
   // https://github.com/angular/angular/issues/24010
+  /** 这个是依赖列表 依赖自身哪些模块 */
   let moduleStatements: string[] = [];
   program
     .getSourceFiles()
@@ -94,8 +95,9 @@ function analyseEntryPoint(graph: BuildGraph, entryPoint: EntryPointNode, entryP
           if (!moduleSpecifier) {
             return;
           }
-
+          /** 依赖名 */
           const text = moduleSpecifier.getText();
+          /** 去引号的依赖 非相对依赖 */
           const trimmedText = text.substring(1, text.length - 1);
           if (!trimmedText.startsWith('.')) {
             moduleStatements.push(trimmedText);
@@ -108,7 +110,7 @@ function analyseEntryPoint(graph: BuildGraph, entryPoint: EntryPointNode, entryP
   );
 
   entryPoint.cache.oldPrograms = { ...entryPoint.cache.oldPrograms, ['analysis']: program };
-
+  // 去重
   moduleStatements = unique(moduleStatements);
   moduleStatements.forEach(moduleName => {
     const dep = entryPoints.find(ep => ep.data.entryPoint.moduleId === moduleName);

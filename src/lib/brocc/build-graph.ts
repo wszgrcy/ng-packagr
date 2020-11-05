@@ -12,7 +12,7 @@ export interface Traversable<T> {
  */
 export class BuildGraph implements Traversable<Node> {
   private store = new Map<string, Node>();
-
+  /** 调用insert */
   public put(value: Node | Node[]) {
     if (value instanceof Array) {
       value.forEach(node => this.insert(node));

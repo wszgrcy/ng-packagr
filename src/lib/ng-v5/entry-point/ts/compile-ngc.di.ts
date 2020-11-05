@@ -2,7 +2,7 @@ import { InjectionToken } from 'injection-js';
 import { Transform } from '../../../brocc/transform';
 import { TransformProvider, provideTransform } from '../../../brocc/transform.di';
 import { compileNgcTransform } from './compile-ngc.transform';
-
+/** ENTRY_POINT_TRANSFORM_TOKEN 调用 */
 export const COMPILE_NGC_TOKEN = new InjectionToken<Transform>(`ng.v5.compileNgcTransform`);
 
 export const COMPILE_NGC_TRANSFORM: TransformProvider = provideTransform({

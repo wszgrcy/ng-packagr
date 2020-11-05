@@ -7,7 +7,7 @@ import { packageTransformFactory } from './package.transform';
 import { ANALYSE_SOURCES_TOKEN, ANALYSE_SOURCES_TRANSFORM } from './init/analyse-sources.di';
 import { DEFAULT_TS_CONFIG_PROVIDER, INIT_TS_CONFIG_TRANSFORM, INIT_TS_CONFIG_TOKEN } from './init/init-tsconfig.di';
 import { OPTIONS_TOKEN, DEFAULT_OPTIONS_PROVIDER } from './options.di';
-
+/** 主要执行的方法,包转换  */
 export const PACKAGE_TRANSFORM_TOKEN = new InjectionToken<Transform>(`ng.v5.packageTransform`);
 
 export const PACKAGE_TRANSFORM: TransformProvider = provideTransform({

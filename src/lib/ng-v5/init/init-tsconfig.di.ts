@@ -14,7 +14,7 @@ export const provideTsConfig = (values?: ParsedConfiguration | string): Provider
     deps: [],
   };
 };
-
+/** tsconfig token 工厂解析 默认conf/tsconfig.ngc.json */
 export const DEFAULT_TS_CONFIG_TOKEN = new InjectionToken<ParsedConfiguration>('ng.v5.defaultTsConfig');
 
 export const DEFAULT_TS_CONFIG_PROVIDER: Provider = provideTsConfig();

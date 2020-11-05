@@ -46,7 +46,8 @@ import { ensureUnixPath } from '../util/path';
  *  - for each entry point
  *    - run the entryPontTransform
  *  - writeNpmPackage
- *
+ * 要执行这个进行一些主要操作
+ * 最后是跳转到build管道
  * @param project Project token, reference to `ng-package.json`
  * @param options ng-packagr options
  * @param initTsConfigTransform Transformation initializing the tsconfig of each entry point.
@@ -81,7 +82,7 @@ export const packageTransformFactory = (
         }),
       );
     }),
-    // Clean the primary dest folder (should clean all secondary sub-directory, as well)
+    // 删除构建 Clean the primary dest folder (should clean all secondary sub-directory, as well)
     switchMap(
       graph => {
         const { dest, deleteDestPath } = graph.get(pkgUri).data;
@@ -92,6 +93,7 @@ export const packageTransformFactory = (
     // Add entry points to graph
     map(graph => {
       const ngPkg = graph.get(pkgUri) as PackageNode;
+      /** 所有入口点 */
       const entryPoints = [ngPkg.data.primary, ...ngPkg.data.secondaries].map(entryPoint => {
         const { destinationFiles, moduleId } = entryPoint;
         const node = new EntryPointNode(
@@ -229,6 +231,7 @@ const scheduleEntryPoints = (epTransform: Transform): Transform =>
       const depthBuilder = new DepthBuilder();
       const entryPoints = graph.filter(isEntryPoint);
       entryPoints.forEach(entryPoint => {
+        // 查依赖
         const deps = entryPoint.filter(isEntryPoint).map(ep => ep.url);
         depthBuilder.add(entryPoint.url, deps);
       });

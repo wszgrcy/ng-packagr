@@ -1,5 +1,5 @@
 import * as nodePath from 'path';
-
+/** 替换为unix格式路径 */
 export const ensureUnixPath = (path?: string): string | null => {
   if (!path) {
     return null;

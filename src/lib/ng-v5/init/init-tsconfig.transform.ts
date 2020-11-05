@@ -5,7 +5,12 @@ import { isEntryPoint, EntryPointNode } from '../nodes';
 import { initializeTsConfig } from '../../ts/tsconfig';
 import { msg } from '../../util/log';
 
-export const initTsConfigTransformFactory = (defaultTsConfig: ParsedConfiguration): Transform =>
+export /**
+ * @description 解析好的tsconfig.json
+ * @param defaultTsConfig
+ * @return {*}
+ */
+const initTsConfigTransformFactory = (defaultTsConfig: ParsedConfiguration): Transform =>
   transformFromPromise(async graph => {
     // Initialize tsconfig for each entry point
     const entryPoints = graph.filter(isEntryPoint) as EntryPointNode[];

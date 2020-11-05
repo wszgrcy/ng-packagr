@@ -39,7 +39,7 @@ export function isEntryPointDirty() {
 export function isFileUrl(value: string): boolean {
   return value.startsWith(URL_PROTOCOL_FILE);
 }
-
+/** 文件协议 */
 export function fileUrl(path: string): string {
   return `${URL_PROTOCOL_FILE}${path}`;
 }
@@ -49,7 +49,7 @@ export function fileUrlPath(url: string): string {
     return url.substring(URL_PROTOCOL_FILE.length);
   }
 }
-
+/** 转换为ng的url */
 export function ngUrl(path: string): string {
   return `${URL_PROTOCOL_NG}${path}`;
 }

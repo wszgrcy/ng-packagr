@@ -20,7 +20,7 @@ import { provideOptions, NgPackagrOptions } from './options.di';
  */
 export class NgPackagr {
   private buildTransform: InjectionToken<Transform> = PACKAGE_TRANSFORM.provide;
-
+  /** 服务器 */
   constructor(private providers: Provider[]) {}
 
   /**
@@ -37,7 +37,7 @@ export class NgPackagr {
 
   /**
    * Sets the path to the user's "ng-package" file (either `package.json`, `ng-package.json`, or `ng-package.js`)
-   *
+   * 将ng配置文件加入到provider中
    * @param project File path
    * @return Self instance for fluent API
    */
@@ -106,7 +106,7 @@ export class NgPackagr {
 
   /**
    * Builds the project by kick-starting the 'build' transform over an (initially) empty `BuildGraph``
-   *
+   * 构建走这里
    * @return An observable result of the transformation pipeline.
    */
   public buildAsObservable(): Observable<void> {

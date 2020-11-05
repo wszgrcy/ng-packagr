@@ -7,7 +7,7 @@ import { EntryPointNode, fileUrl } from '../ng-v5/nodes';
 import { Node } from '../brocc/node';
 import { BuildGraph } from '../brocc/build-graph';
 import { FileCache } from '../file/file-cache';
-
+/** 优先查 sourcesFileCache  */
 export function cacheCompilerHost(
   graph: BuildGraph,
   entryPoint: EntryPointNode,
