@@ -7,6 +7,7 @@ import { EntryPointNode, fileUrl } from '../ng-v5/nodes';
 import { Node } from '../brocc/node';
 import { BuildGraph } from '../brocc/build-graph';
 import { FileCache } from '../file/file-cache';
+import { SourceFilePath } from '../ng-package-format/shared';
 /** 优先查 sourcesFileCache  */
 export function cacheCompilerHost(
   graph: BuildGraph,
@@ -15,6 +16,7 @@ export function cacheCompilerHost(
   moduleResolutionCache: ts.ModuleResolutionCache,
   stylesheetProcessor?: StylesheetProcessor,
   sourcesFileCache: FileCache = entryPoint.cache.sourcesFileCache,
+  extraData: { exist?: (fileName: string) => boolean } = {},
 ): ng.CompilerHost {
   const compilerHost = ng.createCompilerHost({ options: compilerOptions });
 
@@ -53,6 +55,8 @@ export function cacheCompilerHost(
       const cache = sourcesFileCache.getOrCreate(fileName);
       if (!cache.sourceFile) {
         cache.sourceFile = compilerHost.getSourceFile.call(this, fileName, languageVersion);
+      }
+      if (cache.sourceFile && !/.ngfactory/.test(fileName)) {
       }
       return cache.sourceFile;
     },
@@ -123,4 +127,24 @@ export function cacheCompilerHost(
       return cache.content;
     },
   };
+}
+function getNgfactoryNodes(sf: ts.SourceFile, existCallback: (file) => boolean): ts.ExportDeclaration[] {
+  let exportList: string[] = [];
+  let list: ts.Node[] = [sf];
+  while (list.length) {
+    let node = list.pop();
+    if (ts.isExportDeclaration(node) && existCallback(node.moduleSpecifier.getText())) {
+      exportList.push(node.moduleSpecifier.getText());
+    } else {
+      ts.forEachChild(node, node => {
+        list.push(node);
+      });
+    }
+  }
+  return exportList.map(item =>
+    ts.createExportDeclaration(undefined, undefined, undefined, ts.createStringLiteral(item)),
+  );
+}
+function appendExportDeclarations(sf: ts.SourceFile) {
+  // ts.updateSourceFile()
 }
