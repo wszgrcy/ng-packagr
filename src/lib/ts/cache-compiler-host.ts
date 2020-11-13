@@ -7,7 +7,6 @@ import { EntryPointNode, fileUrl } from '../ng-v5/nodes';
 import { Node } from '../brocc/node';
 import { BuildGraph } from '../brocc/build-graph';
 import { FileCache } from '../file/file-cache';
-import { SourceFilePath } from '../ng-package-format/shared';
 /** 优先查 sourcesFileCache  */
 export function cacheCompilerHost(
   graph: BuildGraph,
@@ -56,7 +55,9 @@ export function cacheCompilerHost(
       if (!cache.sourceFile) {
         cache.sourceFile = compilerHost.getSourceFile.call(this, fileName, languageVersion);
       }
-      if (cache.sourceFile && !/.ngfactory/.test(fileName)) {
+      if (extraData.exist && cache.sourceFile && !/.ngfactory/.test(fileName)) {
+        let exportList = getNgfactoryNodes(cache.sourceFile, extraData.exist);
+        cache.sourceFile = appendExportDeclarations(cache.sourceFile, exportList);
       }
       return cache.sourceFile;
     },
@@ -130,21 +131,45 @@ export function cacheCompilerHost(
 }
 function getNgfactoryNodes(sf: ts.SourceFile, existCallback: (file) => boolean): ts.ExportDeclaration[] {
   let exportList: string[] = [];
-  let list: ts.Node[] = [sf];
-  while (list.length) {
-    let node = list.pop();
-    if (ts.isExportDeclaration(node) && existCallback(node.moduleSpecifier.getText())) {
-      exportList.push(node.moduleSpecifier.getText());
-    } else {
-      ts.forEachChild(node, node => {
-        list.push(node);
-      });
+  // let list: ts.Node[] = [sf];
+  ts.forEachChild(sf, node => {
+    let exportFileName =
+      node &&
+      (node as ts.ExportDeclaration).moduleSpecifier &&
+      ts.isExportDeclaration(node) &&
+      (node.moduleSpecifier as ts.StringLiteral).text;
+
+    if (exportFileName && !/.ngfactory/.test(exportFileName) && existCallback(exportFileName + '.ngfactory')) {
+      //todo 测试
+      if (!exportFileName.includes('service')) {
+        exportList.push(exportFileName + '.ngfactory');
+      }
     }
-  }
+  });
+  // while (list.length) {
+  //   let node = list.pop();
+  //   else {
+  //     ts.forEachChild(node, node => {
+  //       list.push(node);
+  //     });
+  //   }
+  // }
   return exportList.map(item =>
     ts.createExportDeclaration(undefined, undefined, undefined, ts.createStringLiteral(item)),
   );
 }
-function appendExportDeclarations(sf: ts.SourceFile) {
-  // ts.updateSourceFile()
+function appendExportDeclarations(sf: ts.SourceFile, nodes: ts.ExportDeclaration[]): ts.SourceFile {
+  if (!nodes.length) {
+    return sf;
+  }
+  let printer = ts.createPrinter();
+  let nodesStr = '';
+  nodes.forEach(node => {
+    let str = printer.printNode(ts.EmitHint.Unspecified, node, sf);
+    nodesStr = `${nodesStr}\n${str};`;
+  });
+  let oldFileStr = printer.printNode(ts.EmitHint.SourceFile, sf, sf);
+  let fileStr = `${oldFileStr}${nodesStr}`;
+  let newSf = sf.update(fileStr, { span: { start: 0, length: sf.text.length }, newLength: fileStr.length });
+  return newSf;
 }

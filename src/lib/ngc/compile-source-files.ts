@@ -10,6 +10,7 @@ import { NgccProcessor } from './ngcc-processor';
 import { ngccTransformCompilerHost } from '../ts/ngcc-transform-compiler-host';
 import { createEmitCallback } from './create-emit-callback';
 import { downlevelConstructorParameters } from '../ts/ctor-parameters';
+import * as path from 'path';
 
 export async function compileSourceFiles(
   graph: BuildGraph,
@@ -24,13 +25,15 @@ export async function compileSourceFiles(
 
   const tsConfigOptions: ng.CompilerOptions = { ...tsConfig.options, ...extraOptions };
   const entryPoint = graph.find(isEntryPointInProgress()) as EntryPointNode;
-
+  let extraData: any = {};
   let tsCompilerHost = cacheCompilerHost(
     graph,
     entryPoint,
     tsConfigOptions,
     moduleResolutionCache,
     stylesheetProcessor,
+    undefined,
+    extraData,
   );
   if (declarationDir) {
     tsCompilerHost = redirectWriteFileCompilerHost(tsCompilerHost, tsConfigOptions.basePath, declarationDir);
@@ -56,7 +59,13 @@ export async function compileSourceFiles(
     host: ngCompilerHost,
     oldProgram,
   });
-
+  extraData.exist = (file: string) => {
+    file = path.resolve(tsConfig.options.basePath, file);
+    if (/\.ts/.test(file)) {
+      return (ngProgram as any).hostAdapter.fileExists(file);
+    }
+    return (ngProgram as any).hostAdapter.fileExists(file + '.ts');
+  };
   await ngProgram.loadNgStructureAsync();
 
   log.debug(
@@ -88,25 +97,26 @@ export async function compileSourceFiles(
       customTransformers: {
         beforeTs: [
           downlevelConstructorParameters(() => ngProgram.getTsProgram().getTypeChecker()),
-          ctx => {
-            return sf => {
-              let fn = node => {
-                if (node.kind === 10) {
-                  if (node.text.includes('component') || node.text.includes('module')) {
-                    return ts.createStringLiteral(node.text + '.ngfactory');
-                  }
-                }
-                return ts.visitEachChild(node, fn, ctx);
-              };
+          //todo 这里只能转换.ts,需要在其他地方实现.d.ts
+          // ctx => {
+          //   return sf => {
+          //     let fn = node => {
+          //       if (node.kind === 10) {
+          //         if (node.text.includes('component') || node.text.includes('module')) {
+          //           return ts.createStringLiteral(node.text + '.ngfactory');
+          //         }
+          //       }
+          //       return ts.visitEachChild(node, fn, ctx);
+          //     };
 
-              if (sf.fileName.includes('public-api.ts')) {
-                return ts.visitNode(sf, node => {
-                  return ts.visitEachChild(node, fn, ctx);
-                });
-              }
-              return sf;
-            };
-          },
+          //     if (sf.fileName.includes('public-api.ts')) {
+          //       return ts.visitNode(sf, node => {
+          //         return ts.visitEachChild(node, fn, ctx);
+          //       });
+          //     }
+          //     return sf;
+          //   };
+          // },
         ],
       },
     });
