@@ -11,6 +11,8 @@ import { ngccTransformCompilerHost } from '../ts/ngcc-transform-compiler-host';
 import { createEmitCallback } from './create-emit-callback';
 import { downlevelConstructorParameters } from '../ts/ctor-parameters';
 import * as path from 'path';
+import { EmitFlags } from '@angular/compiler-cli';
+import { GeneratedFile } from '@angular/compiler';
 
 export async function compileSourceFiles(
   graph: BuildGraph,
@@ -33,7 +35,7 @@ export async function compileSourceFiles(
     moduleResolutionCache,
     stylesheetProcessor,
     undefined,
-    extraData,
+    // extraData,
   );
   if (declarationDir) {
     tsCompilerHost = redirectWriteFileCompilerHost(tsCompilerHost, tsConfigOptions.basePath, declarationDir);
@@ -59,12 +61,36 @@ export async function compileSourceFiles(
     host: ngCompilerHost,
     oldProgram,
   });
+  let oldCalculateTransforms: Function = (ngProgram as any).calculateTransforms;
+  (ngProgram as any).calculateTransforms = function(...args) {
+    let result: ts.CustomTransformers = oldCalculateTransforms.apply(this, args);
+
+    let list = [
+      ctx => {
+        ctx;
+        return (sf: ts.SourceFile) => {
+          let exportList = getNgfactoryNodes(sf, extraData.exist);
+          return appendExportDeclarations(sf, exportList);
+        };
+      },
+    ];
+    result.afterDeclarations = result.afterDeclarations ? [...result.afterDeclarations, ...list] : list;
+    return result;
+  };
   extraData.exist = (file: string) => {
-    file = path.resolve(tsConfig.options.basePath, file);
-    if (/\.ts/.test(file)) {
-      return (ngProgram as any).hostAdapter.fileExists(file);
-    }
-    return (ngProgram as any).hostAdapter.fileExists(file + '.ts');
+    file = path.resolve(tsConfig.options.rootDir, file);
+    // if (/\.ts/.test(file)) {
+    //   return (ngProgram as any).hostAdapter.fileExists(file);
+    // }
+    // return (ngProgram as any).hostAdapter.fileExists(file + '.ts');
+
+    let { genFiles } = (ngProgram as any).generateFilesForEmit(EmitFlags.Default) as { genFiles: GeneratedFile[] };
+    let list = genFiles
+      .filter(gf => {
+        return gf.stmts;
+      })
+      .map(file => file.genFileUrl);
+    return list.some(item => path.resolve(item).includes(file));
   };
   await ngProgram.loadNgStructureAsync();
 
@@ -98,25 +124,13 @@ export async function compileSourceFiles(
         beforeTs: [
           downlevelConstructorParameters(() => ngProgram.getTsProgram().getTypeChecker()),
           //todo 这里只能转换.ts,需要在其他地方实现.d.ts
-          // ctx => {
-          //   return sf => {
-          //     let fn = node => {
-          //       if (node.kind === 10) {
-          //         if (node.text.includes('component') || node.text.includes('module')) {
-          //           return ts.createStringLiteral(node.text + '.ngfactory');
-          //         }
-          //       }
-          //       return ts.visitEachChild(node, fn, ctx);
-          //     };
-
-          //     if (sf.fileName.includes('public-api.ts')) {
-          //       return ts.visitNode(sf, node => {
-          //         return ts.visitEachChild(node, fn, ctx);
-          //       });
-          //     }
-          //     return sf;
-          //   };
-          // },
+          ctx => {
+            ctx;
+            return sf => {
+              let exportList = getNgfactoryNodes(sf, extraData.exist);
+              return appendExportDeclarations(sf, exportList);
+            };
+          },
         ],
       },
     });
@@ -135,4 +149,49 @@ export async function compileSourceFiles(
   } else {
     log.msg(formattedDiagnostics);
   }
+}
+
+function getNgfactoryNodes(sf: ts.SourceFile, existCallback: (file) => boolean): ts.ExportDeclaration[] {
+  let exportList: string[] = [];
+  // let list: ts.Node[] = [sf];
+  ts.forEachChild(sf, node => {
+    let exportFileName =
+      node &&
+      (node as ts.ExportDeclaration).moduleSpecifier &&
+      ts.isExportDeclaration(node) &&
+      (node.moduleSpecifier as ts.StringLiteral).text;
+
+    if (exportFileName && !/.ngfactory/.test(exportFileName) && existCallback(exportFileName)) {
+      //todo 测试
+      exportList.push(exportFileName + '.ngfactory');
+    }
+  });
+  // while (list.length) {
+  //   let node = list.pop();
+  //   else {
+  //     ts.forEachChild(node, node => {
+  //       list.push(node);
+  //     });
+  //   }
+  // }
+  return exportList.map(item =>
+    ts.createExportDeclaration(undefined, undefined, undefined, ts.createStringLiteral(item)),
+  );
+}
+function appendExportDeclarations(sf: ts.SourceFile, nodes: ts.ExportDeclaration[]): ts.SourceFile {
+  if (!nodes.length) {
+    return sf;
+  }
+  let printer = ts.createPrinter();
+  let nodesStr = '';
+  nodes.forEach(node => {
+    let str = printer.printNode(ts.EmitHint.Unspecified, node, sf);
+    nodesStr = `${nodesStr}${str}`;
+  });
+  let oldFileStr = printer.printNode(ts.EmitHint.SourceFile, sf, sf);
+  let fileStr = `${oldFileStr}${nodesStr}`;
+  (sf as any).hasBeenIncrementallyParsed = false;
+  sf.end = sf.text.length;
+  sf.endOfFileToken.end = sf.end;
+  return sf.update(fileStr, { span: { start: 0, length: sf.text.length }, newLength: fileStr.length });
 }
