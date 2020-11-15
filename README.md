@@ -146,3 +146,70 @@ Packaging Angular - Jason Aden at ng-conf 2017 ([28min talk](https://youtu.be/un
 Create and publish Angular libs like a Pro - Juri Strumpflohner at ngVikings, this time demoing building Angular libraries with ng-packagr, with NX as well as Bazel ([March 2018, 30min talk](https://youtu.be/Tw8TCgeqotg))
 
 [![Juri Strumpflohner - Create & Publish Angular Libs like a PRO at ngVikings](https://img.youtube.com/vi/Tw8TCgeqotg/0.jpg)](https://youtu.be/Tw8TCgeqotg)
+
+# 改版说明
+- 仅仅是为了支持aot模式的library打包,启动ivy会直接构建可以用的模块,所以此项目的研究,应该有点`过时`了
+- 原意是将library打包输出为构建好的ngfactory模块
+- 目前绝大部分已经成功,唯一bug(已知)应该是ngstyle也就是style不能使用,无法输出ngstyle
+- 可以实现的就是远程路由技术,远程模块技术
+- 未实现模块的远程引入(cdn式的),大概原因就是构建时,仍然会重新构建一遍ngfactory,如果要修改,估计要直接修改angular部分包进行支持
+# 使用说明
+- tsconfig.json
+```json
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../out-tsc/lib",
+    "target": "es2015",
+    "declaration": true,
+    "inlineSources": true,
+    "types": [],
+    "lib": [
+      "dom",
+      "es2018"
+    ]
+  },
+  // 这里参考设置
+  "angularCompilerOptions": {
+    // 必须
+    "annotateForClosureCompiler": false,
+    // 必须
+    "skipTemplateCodegen": false,
+    "strictMetadataEmit": true,
+    "fullTemplateTypeCheck": true,
+    "strictInjectionParameters": true,
+    "enableResourceInlining": true,
+    // 必须
+    "enableIvy":false
+  },
+  "exclude": [
+    "src/test.ts",
+    "**/*.spec.ts"
+  ]
+}
+
+```
+- 将此分支构建以后npm link替换掉原来的`ng-packagr`后,就可以使用了(正常构建流程)
+# 实现原理
+- 首先上面的tsconfig设置是要保证代码使用默认的emit方式,既默认输出方式
+- 然后在代码中(本项目中)将es5的默认配置注释掉,使得和es2015输出一致(umd包是会根据es5打包的)
+- 最后通过逻辑,将输出的ngfactory文件加入到导出中(如果不加入,那么umd构建仍然不包含)
+# 调用构建包
+- 直接通过js引入,然后类似动态生成模块那样就Ok了
+```ts
+/**LibAotModuleNgFactory 这个就是通过引入的umd包中的导出*/
+    const ref = LibAotModuleNgFactory.create(this.inject);
+    console.log(ref);
+    const fac = ref.componentFactoryResolver.resolveComponentFactory(
+      ref.instance.entry
+    );
+    console.log(fac);
+    this.viewContainerRef.createComponent(fac);
+```
+- 通过路由引用`loadChildren`方式,直接引用`ngfactory`
+> 未测试,但是ng源码的测试用例中可以使用
+
+# 已知问题(由于占用时间过多,已经没精力解决了,愿意搞的大牛可以试试)
+- 不能使用style,因为没有导出ngstyle文件
+- 引用构建好的library后,仍然会在构建时生成ngfactory,不知道是ngfactory有特殊的引用方法,还是需要改ng源码,进行一些重定向或者移除替换操作(因为externals只会移除部分,html模板仍然会打进去)
+
