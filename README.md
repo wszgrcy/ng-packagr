@@ -154,8 +154,8 @@ Create and publish Angular libs like a Pro - Juri Strumpflohner at ngVikings, th
 - 仅仅是为了支持aot模式的library打包,启动ivy会直接构建可以用的模块,所以此项目的研究,应该有点`过时`了
 - 原意是将library打包输出为构建好的ngfactory模块
 - 目前绝大部分已经成功,唯一bug(已知)应该是ngstyle也就是style不能使用,无法输出ngstyle
-- 可以实现的就是远程路由技术,远程模块技术
-- 被引入构建时,仍然会重新构建一遍ngfactory,如果要修改,估计要直接修改angular部分包进行支持
+- js直接引入 可以实现的就是远程路由技术,远程模块技术
+- 传统引入方法,被引入构建时,仍然会重新构建一遍ngfactory,如果要修改,估计要直接修改angular部分包进行支持
 
 # 使用说明
 - tsconfig.json
