@@ -69,6 +69,14 @@ export async function compileSourceFiles(
       ctx => {
         ctx;
         return (sf: ts.SourceFile) => {
+          let JS_EXT = /(\.js|)$/;
+          let entry = path.join(
+            tsConfig.options.rootDir,
+            tsConfig.options.flatModuleOutFile.replace(JS_EXT, '.ts'),
+          );
+          if (path.resolve(sf.fileName) === path.resolve(entry)) {
+            return sf;
+          }
           let exportList = getNgfactoryNodes(sf, extraData.exist);
           return appendExportDeclarations(sf, exportList);
         };
@@ -127,6 +135,14 @@ export async function compileSourceFiles(
           ctx => {
             ctx;
             return sf => {
+              let JS_EXT = /(\.js|)$/;
+              let entry = path.join(
+                tsConfig.options.rootDir,
+                tsConfig.options.flatModuleOutFile.replace(JS_EXT, '.ts'),
+              );
+              if (path.resolve(sf.fileName) === path.resolve(entry)) {
+                return sf;
+              }
               let exportList = getNgfactoryNodes(sf, extraData.exist);
               return appendExportDeclarations(sf, exportList);
             };
